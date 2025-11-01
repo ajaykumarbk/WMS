@@ -1,0 +1,63 @@
+version: '3.9'
+
+#Data base
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: wms-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: admin@123
+      MYSQL_DATABASE: waste_management
+      MYSQL_USER: wms_app
+      MYSQL_PASSWORD: admin@123
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password
+#Backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wms-backend
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    environment:
+      DB_HOST: mysql
+      DB_USER: wms_app
+      DB_PASS: admin@123
+      DB_NAME: waste_management
+      JWT_SECRET: supersecret_jwt_key_2025_wms
+      ADMIN_EMAIL: admin@wms.com
+      ADMIN_PASSWORD: Admin@123
+      PORT: 5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+#Front end
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: wms-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:5000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  mysql-data:

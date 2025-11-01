@@ -1,12 +1,34 @@
+// import { defineConfig } from 'vite'
+// import react from '@vitejs/plugin-react'
+
+// export default defineConfig({
+//   plugins: [react()],
+//   server: {
+//     proxy: {
+//       '/api': 'http://localhost:5000',
+//       '/uploads': 'http://localhost:5000'
+//     }
+//   }
+// })
+
+// frontend/vite.config.js
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: '0.0.0.0',
+    port: 5173,
     proxy: {
-      '/api': 'http://localhost:5000',
-      '/uploads': 'http://localhost:5000'
+      '/api': {
+        target: 'http://backend:5000',
+        changeOrigin: true
+      },
+      '/uploads': {
+        target: 'http://backend:5000',
+        changeOrigin: true
+      }
     }
   }
 })
