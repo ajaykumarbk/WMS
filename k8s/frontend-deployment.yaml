@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: wms-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wms-frontend
+  template:
+    metadata:
+      labels:
+        app: wms-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: gcr.io/PROJECT_ID/wms-frontend:latest
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"

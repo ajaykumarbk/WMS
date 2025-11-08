@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: wms-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wms-backend
+  template:
+    metadata:
+      labels:
+        app: wms-backend
+    spec:
+      containers:
+        - name: backend
+          image: gcr.io/PROJECT_ID/wms-backend:latest   # will be replaced by script
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DB_HOST
+              value: "140.245.237.157"
+            - name: DB_USER
+              value: "wms_app"
+            - name: DB_PASS
+              value: "Ajaykumar@12."
+            - name: DB_NAME
+              value: "waste_management"
+            - name: PORT
+              value: "5000"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

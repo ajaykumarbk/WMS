@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wms-ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"   # enable if you have cert-manager
+spec:
+  rules:
+    - host: wms.yourdomain.com   # replace or remove for default GCE IP
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
