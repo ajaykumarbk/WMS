@@ -17,7 +17,6 @@ pnpm-lock.yaml
 # Environment / Secrets
 # ---------------------------
 .env
-.env.*
 !.env.example
 
 # ---------------------------

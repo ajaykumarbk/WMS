@@ -23,10 +23,13 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://backend:5000',
+        // target: 'http://localhost:5000',
+
         changeOrigin: true
       },
       '/uploads': {
         target: 'http://backend:5000',
+        // target: 'http://localhost:5000',
         changeOrigin: true
       }
     }
