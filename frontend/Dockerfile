@@ -1,20 +1,18 @@
 FROM node:20-alpine AS build
 
 WORKDIR /app
-
 COPY package*.json ./
 RUN npm install
 
-# ✅ Copy EVERYTHING including .env
+# ✅ Copy env first so Vite can read it
+COPY .env .env
 COPY . .
 
-# ✅ Vite reads VITE_API_URL now
+# ✅ Build with env
 RUN npm run build
 
 FROM nginx:stable-alpine
 RUN rm -rf /usr/share/nginx/html/*
-
 COPY --from=build /app/dist /usr/share/nginx/html
-
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
