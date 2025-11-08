@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: us-central1-docker.pkg.dev/playground-s-11-e43847ac/wms-repo/wms-frontend:latest
+          image: gcr.io/PROJECT_ID/wms-frontend:latest
           ports:
             - containerPort: 80
           resources:

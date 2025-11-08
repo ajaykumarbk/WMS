@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: us-central1-docker.pkg.dev/playground-s-11-e43847ac/wms-repo/wms-backend:latest   # will be replaced by script
+          image: gcr.io/PROJECT_ID/wms-backend:latest   # will be replaced by script
           ports:
             - containerPort: 5000
           env:
