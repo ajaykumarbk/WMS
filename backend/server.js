@@ -23,7 +23,10 @@ app.use('/api/tips', require('./routes/tipRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, '0.0.0.0', () => console.log(`Backend running on port ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
+});
+
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
