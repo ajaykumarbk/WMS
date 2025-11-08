@@ -16,8 +16,7 @@ pnpm-lock.yaml
 # ---------------------------
 # Environment / Secrets
 # ---------------------------
-.env
-!.env.example
+
 
 # ---------------------------
 # Node / Backend
