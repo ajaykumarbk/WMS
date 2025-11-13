@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supportair-frontend
+  namespace: supportair
+  labels:
+    app: supportair-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: supportair-frontend
+  template:
+    metadata:
+      labels:
+        app: supportair-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: ajaykumara/supportair_frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"

@@ -1,34 +1,29 @@
-# # ---- Build Vite ----
-# FROM node:20-alpine AS builder
-# WORKDIR /app
+# Build stage
+FROM node:18-alpine as builder
 
-# COPY package*.json ./
-# RUN npm install --production
-
-# COPY . ./
-# RUN npm run build
-
-# # ---- Nginx ----
-# FROM nginx:alpine
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
-# COPY --from=builder /app/dist /usr/share/nginx/html
-# EXPOSE 80
-# CMD ["nginx", "-g", "daemon off;"]
-
-# ---- Build Vite ----
-FROM node:20-alpine AS builder
 WORKDIR /app
 
+# Copy package files
 COPY package*.json ./
-# Install ALL deps (including vite) for build
+
+# Install dependencies
 RUN npm install
 
-COPY . ./
-RUN npm run build   # Now vite is available
+# Copy source code
+COPY . .
 
-# ---- Nginx (Production) ----
+# Build the application
+RUN npm run build
+
+# Production stage
 FROM nginx:alpine
+
+# Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built files
 COPY --from=builder /app/dist /usr/share/nginx/html
+
 EXPOSE 80
+
 CMD ["nginx", "-g", "daemon off;"]
