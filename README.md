@@ -31,10 +31,8 @@ gcloud run deploy backend-app \
   --region us-east1 \
   --platform managed \
   --allow-unauthenticated \
-  --set-env-vars DB_HOST=140.245.237.157 \
-  --set-env-vars DB_USER=wms_app \
-  --set-env-vars DB_PASS=Ajaykumar@12. \
-  --set-env-vars DB_NAME=waste_management \
-  --set-env-vars JWT_SECRET=supersecret_jwt_key_2025_wms \
-  --set-env-vars EMAIL_USER=yourgmail@gmail.com \
-  --set-env-vars EMAIL_PASS=your_app_password_16_chars
+  --set-env-vars DB_HOST=Host \
+  --set-env-vars DB_USER=user \
+  --set-env-vars DB_PASS=user \
+  --set-env-vars DB_NAME=db \
+  --set-env-vars JWT_SECRET=supersecret_jwt_key_2025_wms
