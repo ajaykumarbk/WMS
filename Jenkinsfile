@@ -10,7 +10,6 @@ pipeline {
     stages {
         stage('Checkout Code') {
     steps {
-        echo "📦 Cloning source code from GitHub..."
         git url: 'https://github.com/ajaykumarbk/WMS', branch: 'master'
     }
 }
@@ -20,7 +19,6 @@ pipeline {
                 stage('Build Frontend Image') {
                     steps {
                         script {
-                            echo "🐳 Building Frontend Docker Image..."
                             sh "docker build -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} ./frontend"
                         }
                     }
@@ -29,7 +27,6 @@ pipeline {
                 stage('Build Backend Image') {
                     steps {
                         script {
-                            echo "🐳 Building Backend Docker Image..."
                             sh "docker build -t ${BACKEND_IMAGE}:${BUILD_NUMBER} ./backend"
                         }
                     }
@@ -40,7 +37,7 @@ pipeline {
         stage('DockerHub Login') {
             steps {
                 script {
-                    echo "🔐 Logging into DockerHub..."
+                    
                     withCredentials([usernamePassword(
                         credentialsId: 'dockerhub-cred',
                         usernameVariable: 'USERNAME',
@@ -55,14 +52,10 @@ pipeline {
         stage('Push Images to DockerHub') {
             steps {
                 script {
-                    echo "📤 Pushing images to Docker Hub..."
-
-                    // Push Frontend
+                
                     sh "docker push ${FRONTEND_IMAGE}:${BUILD_NUMBER}"
                     sh "docker tag ${FRONTEND_IMAGE}:${BUILD_NUMBER} ${FRONTEND_IMAGE}:latest"
                     sh "docker push ${FRONTEND_IMAGE}:latest"
-
-                    // Push Backend
                     sh "docker push ${BACKEND_IMAGE}:${BUILD_NUMBER}"
                     sh "docker tag ${BACKEND_IMAGE}:${BUILD_NUMBER} ${BACKEND_IMAGE}:latest"
                     sh "docker push ${BACKEND_IMAGE}:latest"
@@ -72,7 +65,6 @@ pipeline {
 
         stage('Cleanup') {
             steps {
-                echo "🧹 Removing local Docker images..."
                 sh "docker image rm ${FRONTEND_IMAGE}:${BUILD_NUMBER} || true"
                 sh "docker image rm ${FRONTEND_IMAGE}:latest || true"
                 sh "docker image rm ${BACKEND_IMAGE}:${BUILD_NUMBER} || true"
