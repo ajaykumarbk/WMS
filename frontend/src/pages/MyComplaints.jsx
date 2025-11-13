@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react'
 import axios from 'axios'
 import { AuthContext } from '../context/AuthContext'
+import ComplaintCard from '../components/ComplaintCard'   // <- ADD THIS
 import Pagination from '../components/Pagination'
 
 const API = import.meta.env.VITE_API_URL
@@ -12,13 +13,15 @@ export default function MyComplaints() {
   const [pages, setPages] = useState(1)
 
   useEffect(() => {
+    if (!user) return
+
     axios.get(`${API}/api/complaints?page=${page}`)
       .then(res => {
         setComplaints(res.data.complaints)
         setPages(res.data.pages)
       })
       .catch(() => console.error("Failed to fetch complaints"))
-  }, [page])
+  }, [page, user])
 
   if (!user) return <p>Please login.</p>
 
