@@ -9,7 +9,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "https://frontend-app-304406449270.europe-west1.run.app",
+    origin: "https://frontend-app-1098700306363.us-east1.run.app",
     methods: ["GET", "POST"],
   },
   transports: ['polling']   // Cloud Run requires this
@@ -17,7 +17,7 @@ const io = new Server(server, {
 
 // CORS for Express
 app.use(cors({
-  origin: "https://frontend-app-304406449270.europe-west1.run.app",
+  origin: "https://frontend-app-1098700306363.us-east1.run.app",
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
