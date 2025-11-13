@@ -1,21 +1,43 @@
-# # ---- Build ----
-# FROM node:20-alpine AS builder
+# # # ---- Build ----
+# # FROM node:20-alpine AS builder
+# # WORKDIR /app
+
+# # COPY package*.json ./
+# # RUN npm install --production   # ← CHANGED: Use install + production
+
+# # COPY . ./
+
+# # # ---- Runtime ----
+# # FROM node:20-alpine
+# # WORKDIR /app
+# # COPY --from=builder /app ./
+# # EXPOSE 5000
+# # ENV NODE_ENV=production
+# # CMD ["node", "src/index.js"]
+
+# FROM node:18-alpine
+
 # WORKDIR /app
 
+# # Copy package files
 # COPY package*.json ./
-# RUN npm install --production   # ← CHANGED: Use install + production
 
-# COPY . ./
+# # Install dependencies
+# RUN npm install --production
 
-# # ---- Runtime ----
-# FROM node:20-alpine
-# WORKDIR /app
-# COPY --from=builder /app ./
+# # Copy application code
+# COPY . .
+
+# # Create uploads directory
+# RUN mkdir -p uploads
+
+# # Expose port
 # EXPOSE 5000
-# ENV NODE_ENV=production
-# CMD ["node", "src/index.js"]
 
-FROM node:18-alpine
+# # Start application
+# CMD ["node", "server.js"]
+
+FROM node:18-slim
 
 WORKDIR /app
 
@@ -23,7 +45,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --production
+RUN npm ci --only=production
 
 # Copy application code
 COPY . .
@@ -31,8 +53,11 @@ COPY . .
 # Create uploads directory
 RUN mkdir -p uploads
 
-# Expose port
-EXPOSE 5000
+# Expose port 8080
+EXPOSE 8080
 
-# Start application
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:8080/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
 CMD ["node", "server.js"]
