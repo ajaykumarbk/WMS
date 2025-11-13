@@ -9,6 +9,7 @@ Commands to deploy this application to google cloud run
 docker build -t frontend . 
 
 docker tag frontend gcr.io/qwiklabs-gcp-04-8110705f4325/frontend-app
+
 docker push gcr.io/qwiklabs-gcp-04-8110705f4325/frontend-app
 
 gcloud run deploy frontend-app \
@@ -16,8 +17,6 @@ gcloud run deploy frontend-app \
   --platform managed \
   --allow-unauthenticated \
   --region us-east1
-
-
 
 # backend deployment
 
