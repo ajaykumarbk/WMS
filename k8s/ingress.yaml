@@ -1,40 +1,50 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: supportair-ingress
-  namespace: supportair
+  name: wms-ingress
+  namespace: wms
   annotations:
     kubernetes.io/ingress.class: "gce"
-    kubernetes.io/ingress.global-static-ip-name: "supportair-ip"
+    kubernetes.io/ingress.global-static-ip-name: "wms-ip"
+    kubernetes.io/ingress.allow-http: "true"
+  labels:
+    app: wms
 spec:
   rules:
   - http:
       paths:
+      # Backend API routes
       - path: /api/*
         pathType: ImplementationSpecific
         backend:
           service:
-            name: supportair-backend
+            name: wms-backend
             port:
               number: 5000
+      
+      # Uploads route
       - path: /uploads/*
         pathType: ImplementationSpecific
         backend:
           service:
-            name: supportair-backend
+            name: wms-backend
             port:
               number: 5000
+      
+      # Socket.io route
       - path: /socket.io/*
         pathType: ImplementationSpecific
         backend:
           service:
-            name: supportair-backend
+            name: wms-backend
             port:
               number: 5000
+      
+      # Frontend routes (catch-all)
       - path: /*
         pathType: ImplementationSpecific
         backend:
           service:
-            name: supportair-frontend
+            name: wms-frontend
             port:
               number: 80

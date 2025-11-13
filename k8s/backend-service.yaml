@@ -1,16 +1,18 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: supportair-backend
-  namespace: supportair
+  name: wms-backend
+  namespace: wms
   labels:
-    app: supportair-backend
+    app: wms-backend
+    tier: backend
 spec:
   type: ClusterIP
+  sessionAffinity: ClientIP
   ports:
   - port: 5000
     targetPort: 5000
     protocol: TCP
     name: http
   selector:
-    app: supportair-backend
+    app: wms-backend

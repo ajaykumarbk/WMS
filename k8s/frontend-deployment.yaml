@@ -1,28 +1,38 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: supportair-frontend
-  namespace: supportair
+  name: wms-frontend
+  namespace: wms
   labels:
-    app: supportair-frontend
+    app: wms-frontend
+    tier: frontend
+    system: waste-management
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: supportair-frontend
+      app: wms-frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
-        app: supportair-frontend
+        app: wms-frontend
+        tier: frontend
+        system: waste-management
     spec:
       containers:
       - name: frontend
-        image: ajaykumara/supportair_frontend:latest
+        image: ajaykumara/frontend-app:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 80
           name: http
           protocol: TCP
+        
         resources:
           requests:
             memory: "128Mi"
@@ -30,3 +40,21 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "200m"
+        
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3

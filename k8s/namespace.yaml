@@ -1,4 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: supportair
+  name: wms
+  labels:
+    name: wms
+    app: waste-management-system
