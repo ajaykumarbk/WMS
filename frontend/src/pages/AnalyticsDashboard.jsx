@@ -6,13 +6,19 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
+// 🔥 Backend URL from environment
+const API = import.meta.env.VITE_API_URL
+
 export default function AnalyticsDashboard() {
   const { user } = useContext(AuthContext)
   const [data, setData] = useState(null)
 
   useEffect(() => {
-    if (user?.role === 'admin') {
-      axios.get('/api/analytics').then(res => setData(res.data))
+    if (user?.role === "admin") {
+      // 🔥 FIXED API URL
+      axios.get(`${API}/api/analytics`)
+        .then(res => setData(res.data))
+        .catch(err => console.error("Analytics error:", err))
     }
   }, [user])
 
@@ -31,12 +37,19 @@ export default function AnalyticsDashboard() {
   return (
     <div>
       <h2>Analytics Dashboard</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '20px',
+        marginBottom: '30px'
+      }}>
         <div className="card"><h3>Total Complaints</h3><p style={{ fontSize: '2rem' }}>{data.totalComplaints}</p></div>
         <div className="card"><h3>Pending</h3><p style={{ fontSize: '2rem', color: '#f39c12' }}>{data.pending}</p></div>
         <div className="card"><h3>Resolved</h3><p style={{ fontSize: '2rem', color: '#27ae60' }}>{data.resolved}</p></div>
         <div className="card"><h3>Users</h3><p style={{ fontSize: '2rem' }}>{data.users}</p></div>
       </div>
+
       <div className="card">
         <h3>Complaints by Category</h3>
         <Bar data={chartData} />
