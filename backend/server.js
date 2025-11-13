@@ -6,25 +6,80 @@ require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
 
-app.use(cors());
+const io = new Server(server, {
+  cors: {
+    origin: "https://frontend-app-304406449270.europe-west1.run.app",
+    methods: ["GET", "POST"],
+  },
+  transports: ['polling']   // Cloud Run requires this
+});
+
+// CORS for Express
+app.use(cors({
+  origin: "https://frontend-app-304406449270.europe-west1.run.app",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
+// Socket.IO attach to requests
 app.use((req, res, next) => {
   req.io = io;
   next();
 });
 
+// Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/complaints', require('./routes/complaintRoutes'));
 app.use('/api/tips', require('./routes/tipRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 
+// PORT for Cloud Run
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Backend on http://localhost:${PORT}`));
 
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+server.listen(PORT, () => {
+  console.log(`Backend running on port ${PORT}`);
 });
+
+// Socket events
+io.on('connection', (socket) => {
+  console.log('New socket connected:', socket.id);
+});
+
+
+
+
+
+// const express = require('express');
+// const cors = require('cors');
+// const http = require('http');
+// const { Server } = require('socket.io');
+// require('dotenv').config();
+
+// const app = express();
+// const server = http.createServer(app);
+// const io = new Server(server, { cors: { origin: '*' } });
+
+// app.use(cors());
+// app.use(express.json());
+// app.use('/uploads', express.static('uploads'));
+
+// app.use((req, res, next) => {
+//   req.io = io;
+//   next();
+// });
+
+// app.use('/api/auth', require('./routes/authRoutes'));
+// app.use('/api/complaints', require('./routes/complaintRoutes'));
+// app.use('/api/tips', require('./routes/tipRoutes'));
+// app.use('/api/analytics', require('./routes/analyticsRoutes'));
+
+// const PORT = process.env.PORT || 5000;
+// server.listen(PORT, () => console.log(`Backend on http://localhost:${PORT}`));
+
+// io.on('connection', (socket) => {
+//   console.log('User connected:', socket.id);
+// });
