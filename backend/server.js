@@ -7,25 +7,24 @@ require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 
+// CORS setup
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "*";
+
 const io = new Server(server, {
-  cors: {
-    origin: "https://frontend-app-1098700306363.us-east1.run.app",
-    methods: ["GET", "POST"],
-  },
-  transports: ['polling']   // Cloud Run requires this
+  cors: { origin: FRONTEND_ORIGIN }
 });
 
-// CORS for Express
-app.use(cors({
-  origin: "https://frontend-app-1098700306363.us-east1.run.app",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
-}));
+app.use(cors({ origin: FRONTEND_ORIGIN }));
 
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
-// Socket.IO attach to requests
+// 🔥 ADD THIS — Health endpoint for Kubernetes
+app.get("/api/auth/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+// Attach io to req
 app.use((req, res, next) => {
   req.io = io;
   next();
@@ -37,17 +36,13 @@ app.use('/api/complaints', require('./routes/complaintRoutes'));
 app.use('/api/tips', require('./routes/tipRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 
-// PORT for Cloud Run
 const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
 
-server.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT}`);
-});
-
-// Socket events
 io.on('connection', (socket) => {
-  console.log('New socket connected:', socket.id);
+  console.log('Socket connected:', socket.id);
 });
+
 
 // const express = require('express');
 // const cors = require('cors');
