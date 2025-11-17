@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: wms
+data:
+  VITE_API_URL: "http://3.210.204.225:30500"
