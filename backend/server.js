@@ -19,7 +19,7 @@ app.use(cors({ origin: FRONTEND_ORIGIN }));
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
-// 🔥 ADD THIS — Health endpoint for Kubernetes
+//Health endpoint for Kubernetes
 app.get("/api/auth/health", (req, res) => {
   res.json({ status: "ok" });
 });
