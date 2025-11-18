@@ -4,4 +4,4 @@ metadata:
   name: backend-config
   namespace: wms
 data:
-  FRONTEND_ORIGIN: "http://3.210.204.225:30080"
+  FRONTEND_ORIGIN: "http://100.25.77.23:30080"
