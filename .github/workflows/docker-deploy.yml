@@ -35,8 +35,8 @@ jobs:
           curl -s -o /dev/null -w "%{http_code}" \
             -u "${{ secrets.SONAR_TOKEN }}:" \
             -X POST "${{ secrets.SONAR_HOST_URL }}/api/projects/create" \
-            -d "project=${{ github.repository }}" \
-            -d "name=${{ github.repository }}" \
+            -d "project=wms" \
+            -d "name=wms" \
           || echo "Ignoring SonarQube creation error"
         continue-on-error: true
 
@@ -46,8 +46,8 @@ jobs:
         with:
           projectBaseDir: .
           args: >
-            -Dsonar.projectKey=${{ github.repository }}
-            -Dsonar.projectName=${{ github.repository }}
+            -Dsonar.projectKey=wms
+            -Dsonar.projectName=wms
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
