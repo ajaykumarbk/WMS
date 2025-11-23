@@ -4,4 +4,5 @@ metadata:
   name: frontend-config
   namespace: wms
 data:
-  VITE_API_URL: "http://100.25.77.23:30500"
+  VITE_API_URL: "https://api.datanetwork.online"
+  FRONTEND_ORIGIN: "https://app.datanetwork.online"
