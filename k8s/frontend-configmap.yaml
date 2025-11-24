@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: frontend-config
-  namespace: wms
-data:
-  VITE_API_URL: "https://api.datanetwork.online"
-  FRONTEND_ORIGIN: "https://app.datanetwork.online"
