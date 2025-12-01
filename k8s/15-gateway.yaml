@@ -1,26 +1,42 @@
-apiVersion: gateway.networking.k8s.io/v1beta1
+apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: wms-gateway
   namespace: wms
 spec:
-  gatewayClassName: nginx-gateway-class
+  gatewayClassName: nginx
   listeners:
-    - name: http
-      protocol: HTTP
-      port: 80
-      allowedRoutes:
-        namespaces:
-          from: All
-    - name: https
+    - name: app-https
+      hostname: app.datanetwork.online
       protocol: HTTPS
       port: 443
       tls:
         mode: Terminate
         certificateRefs:
           - name: tls-app-datanetwork
-          - name: tls-api-datanetwork
+            kind: Secret
+            group: ""
       allowedRoutes:
         namespaces:
           from: All
-  # This Gateway will create a Data Plane Service of type LoadBalancer
+
+    - name: api-https
+      hostname: api.datanetwork.online
+      protocol: HTTPS
+      port: 444
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: tls-api-datanetwork
+            kind: Secret
+            group: ""
+      allowedRoutes:
+        namespaces:
+          from: All
+
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: All
