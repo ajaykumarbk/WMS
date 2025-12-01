@@ -6,28 +6,14 @@ metadata:
 spec:
   gatewayClassName: nginx
   listeners:
-    - name: app-https
-      hostname: app.datanetwork.online
+    - name: https
       protocol: HTTPS
       port: 443
+      hostname: "*.datanetwork.online"
       tls:
         mode: Terminate
         certificateRefs:
-          - name: tls-app-datanetwork
-            kind: Secret
-            group: ""
-      allowedRoutes:
-        namespaces:
-          from: All
-
-    - name: api-https
-      hostname: api.datanetwork.online
-      protocol: HTTPS
-      port: 444
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: tls-api-datanetwork
+          - name: wildcard-datanetwork-tls
             kind: Secret
             group: ""
       allowedRoutes:

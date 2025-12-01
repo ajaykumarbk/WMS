@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-datanetwork
+  namespace: wms
+spec:
+  secretName: wildcard-datanetwork-tls
+  commonName: "*.datanetwork.online"
+  dnsNames:
+    - "*.datanetwork.online"
+  issuerRef:
+    name: letsencrypt-staging-cloudflare
+    kind: ClusterIssuer
