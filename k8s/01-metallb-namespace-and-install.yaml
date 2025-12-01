@@ -1,0 +1,8 @@
+# Install MetalLB (manifest install)
+# Apply upstream manifests first (run separately if you prefer):
+# kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.10/configmap.yaml
+# Here provide the namespace manifest for metallb-system
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: metallb-system
