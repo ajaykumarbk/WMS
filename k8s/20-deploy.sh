@@ -8,8 +8,7 @@ kubectl apply -f 00-namespace-wms.yaml
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.4/cert-manager.yaml
 
 # Install MetalLB (if not installed)
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.10/manifests/namespace.yaml
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.10/manifests/metallb.yaml
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.10/config/manifests/metallb-native.yaml
 
 # Apply IPPool and L2 adv
 kubectl apply -f 02-metallb-ippool.yaml
