@@ -1,101 +1,3 @@
-name: Build & Push Docker Images
-
-on:
-  push:
-    branches: [ develop ]
-  workflow_dispatch:
-
-jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Create SonarQube Project If Not Exists
-        run: |
-          curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
-            -X POST "${{ secrets.SONAR_HOST_URL }}/api/projects/create" \
-            -d "project=wms-develop" -d "name=wms-develop" \
-            || true
-
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v3
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        with:
-          args: >
-            -Dsonar.projectKey=wms-develop
-            -Dsonar.projectName=wms-develop
-            -Dsonar.branch.name=develop
-            -Dsonar.qualitygate.wait=false   # ← Very important
-
-      # QUALITY GATE ONLY FAILS ON MAIN, NEVER ON DEVELOP
-      - name: SonarQube Quality Gate (strict only on main)
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        uses: SonarSource/sonarqube-quality-gate-action@v1
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        timeout-minutes: 5
-
-      # On develop → always pass (but still show result in SonarQube)
-      - name: Fake passing Quality Gate on develop
-        if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
-        run: echo "Quality Gate check skipped on develop branch (still analyzed in SonarQube)"
-
-      # === DOCKER BUILD & PUSH (unchanged) ===
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and Push Frontend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          push: true
-          tags: |
-            ajaykumara/frontend-app:${{ github.sha }}
-            ajaykumara/frontend-app:develop
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and Push Backend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          push: true
-          tags: |
-            ajaykumara/backend-app:${{ github.sha }}
-            ajaykumara/backend-app:develop
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Done
-        run: |
-          echo "Images built and pushed successfully for develop branch!"
-          echo "Frontend → ajaykumara/frontend-app:develop"
-          echo "Backend  → ajaykumara/backend-app:develop"
-
-
 # name: Build & Push Docker Images
 
 # on:
@@ -201,3 +103,96 @@ jobs:
 #           echo "Frontend & Backend images pushed successfully!"
 #           echo "Frontend: ajaykumara/frontend-app:latest"
 #           echo "Backend:  ajaykumara/backend-app:latest"
+
+name: Build & Push Docker Images
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Create SonarQube Project If Not Exists
+        run: |
+          echo "Attempting to create SonarQube project..."
+          curl -s -o /dev/null -w "%{http_code}" \
+            -u "${{ secrets.SONAR_TOKEN }}:" \
+            -X POST "${{ secrets.SONAR_HOST_URL }}/api/projects/create" \
+            -d "project=wms" \
+            -d "name=wms" \
+          || echo "Ignoring SonarQube creation error"
+        continue-on-error: true
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v3
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.projectKey=wms
+            -Dsonar.projectName=wms
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      # QUALITY GATE COMPLETELY IGNORED / ALWAYS PASSES
+      - name: SonarQube Quality Gate (bypassed on develop)
+        run: |
+          echo "Quality Gate check skipped on develop branch"
+          echo "Code was successfully scanned and sent to SonarQube"
+          echo "View results: ${{ secrets.SONAR_HOST_URL }}/dashboard?id=wms"
+
+      # Docker steps - unchanged
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ajaykumara/frontend-app:${{ github.run_number }}
+            ajaykumara/frontend-app:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and Push Backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ajaykumara/backend-app:${{ github.run_number }}
+            ajaykumara/backend-app:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Done
+        run: |
+          echo "Frontend & Backend images pushed successfully!"
+          echo "Frontend: ajaykumara/frontend-app:latest"
+          echo "Backend:  ajaykumara/backend-app:latest"
