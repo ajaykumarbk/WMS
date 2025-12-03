@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Cloudflare API Token
-CF_API_TOKEN="YOUR_CLOUDFLARE_API_TOKEN"
-CF_ZONE_ID="YOUR_CLOUDFLARE_ZONE_ID"
+CF_API_TOKEN="ZkUQyiqKjOaDsD5yLObULWddvbSvdydta4IQ-C-p"
+CF_ZONE_ID="3e70d69870ecf0a8a5400bf8180ad3f4"
 DOMAIN="datanetwork.online"
 SUBDOMAINS=("app" "api")
 

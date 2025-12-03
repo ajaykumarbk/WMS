@@ -1,14 +1,10 @@
-#!/bin/bash
-
-# Install Gateway API CRDs
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
+# Add the NGINX Gateway Fabric Helm repository
+helm repo add nginx-gateway-fabric https://nginxinc.github.io/nginx-gateway-fabric
+helm repo update
 
 # Install NGINX Gateway Fabric
-kubectl apply -f https://raw.githubusercontent.com/nginxinc/nginx-gateway-fabric/v1.1.0/deploy/manifests/deployment/ns-and-sa.yaml
-kubectl apply -f https://raw.githubusercontent.com/nginxinc/nginx-gateway-fabric/v1.1.0/deploy/manifests/deployment/rbac.yaml
-kubectl apply -f https://raw.githubusercontent.com/nginxinc/nginx-gateway-fabric/v1.1.0/deploy/manifests/deployment/nginx-gateway-default-secret.yaml
-kubectl apply -f https://raw.githubusercontent.com/nginxinc/nginx-gateway-fabric/v1.1.0/deploy/manifests/deployment/nginx-gateway.yaml
+helm install ngf nginx-gateway-fabric/nginx-gateway-fabric -n nginx-gateway --create-namespace
 
-# Verify
 kubectl get pods -n nginx-gateway
 kubectl get svc -n nginx-gateway
+kubectl get gatewayclass
