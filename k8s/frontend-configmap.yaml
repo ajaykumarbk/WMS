@@ -4,4 +4,4 @@ metadata:
   name: frontend-config
   namespace: wms
 data:
-  VITE_API_URL: "http://100.25.77.23:30500"
+  VITE_API_URL: "http://3.219.34.219:30500"
