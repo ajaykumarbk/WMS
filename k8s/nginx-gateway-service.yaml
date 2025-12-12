@@ -1,0 +1,21 @@
+# nginx-gateway-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-gateway
+  namespace: nginx-gateway
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "10.0.1.200"  # First IP in our range
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  - port: 443
+    targetPort: 443
+    protocol: TCP
+    name: https
+  selector:
+    app: nginx-gateway
