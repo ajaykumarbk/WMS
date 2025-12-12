@@ -2,7 +2,7 @@ name: Build & Push Docker Images
 
 on:
   push:
-    branches: [ develop ]        # Triggers on push to develop
+    branches: [ develop, test ]        # Triggers on push to develop
   workflow_dispatch:             # Manual trigger
 
 jobs:
