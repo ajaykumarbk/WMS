@@ -33,11 +33,17 @@ spec:
           httpGet:
             path: /
             port: 80
-          initialDelaySeconds: 5
+          initialDelaySeconds: 30          # Increased - give NGINX time to start
           periodSeconds: 10
+          timeoutSeconds: 3                # How long to wait for response
+          successThreshold: 1
+          failureThreshold: 6              # ~1 minute total tolerance
         livenessProbe:
           httpGet:
             path: /
             port: 80
-          initialDelaySeconds: 15
-          periodSeconds: 20
+          initialDelaySeconds: 60          # Even more generous for liveness
+          periodSeconds: 30
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3              # Restart only after significant failure

@@ -10,10 +10,27 @@ spec:
   hostnames:
   - "app.datanetwork.online"
   rules:
+  # Rule 1: Match everything (root + subpaths)
   - matches:
     - path:
         type: PathPrefix
         value: /
+    backendRefs:
+    - name: frontend
+      port: 80
+      namespace: wms
+
+  # Rule 2: Explicit match for static assets (ensures /assets/ and files like vite.svg are forwarded)
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /assets/
+    - path:
+        type: Exact
+        value: /vite.svg
+    - path:
+        type: Exact
+        value: /favicon.ico   # add if you have favicon
     backendRefs:
     - name: frontend
       port: 80
