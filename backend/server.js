@@ -41,7 +41,7 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
-// UPDATED CORS - Reliable, allows both HTTP & HTTPS origins
+// FIXED CORS: Explicit array + preflight handling
 const allowedOrigins = [
   'http://app.datanetwork.online',
   'https://app.datanetwork.online',
@@ -50,14 +50,14 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: allowedOrigins,       // Array is simple & reliable
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  optionsSuccessStatus: 204     // Standard for OPTIONS preflight
+  optionsSuccessStatus: 204      // Required for OPTIONS preflight success
 }));
 
-// Explicit OPTIONS handler for all routes (extra safety for preflights)
+// Explicitly handle all OPTIONS requests (extra safety)
 app.options('*', cors());
 
 // Socket.IO with matching CORS
