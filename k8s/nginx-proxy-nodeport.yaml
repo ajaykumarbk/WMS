@@ -1,0 +1,10 @@
+# nginx-proxy-nodeport.yaml
+apiVersion: gateway.nginx.org/v1alpha1
+kind: NginxProxy
+metadata:
+  name: ngf-proxy-config
+  namespace: nginx-gateway
+spec:
+  service:
+    type: NodePort
+    externalTrafficPolicy: Local

@@ -1,0 +1,181 @@
+# ===============================
+# Namespace
+# ===============================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wms
+---
+# ===============================
+# Backend Secret
+# ===============================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-secret
+  namespace: wms
+type: Opaque
+stringData:
+  PORT: "5000"
+  DB_HOST: "140.245.237.157"
+  DB_USER: "wms_app"
+  DB_PASS: "Ajaykumar@12."
+  DB_NAME: "waste_management"
+  JWT_SECRET: "supersecret_jwt_key_2025_wms"
+---
+# ===============================
+# Backend Deployment
+# ===============================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: wms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: ajaykumara/backend-app:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - secretRef:
+                name: backend-secret
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 5000
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 5000
+            initialDelaySeconds: 15
+---
+# ===============================
+# Backend Service
+# ===============================
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: wms
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+    - port: 5000
+      targetPort: 5000
+---
+# ===============================
+# Frontend Deployment
+# ===============================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: wms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ajaykumara/frontend-app:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+---
+# ===============================
+# Frontend Service
+# ===============================
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: wms
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+---
+# ===============================
+# GatewayClass
+# ===============================
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: nginx
+spec:
+  controllerName: nginx.org/gateway-controller
+---
+# ===============================
+# Gateway
+# ===============================
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: wms-gateway
+  namespace: wms
+spec:
+  gatewayClassName: nginx
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+---
+# ===============================
+# HTTPRoute - Frontend
+# ===============================
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: frontend-route
+  namespace: wms
+spec:
+  parentRefs:
+    - name: wms-gateway
+  hostnames:
+    - app.datanetwork.online
+  rules:
+    - backendRefs:
+        - name: frontend-service
+          port: 80
+---
+# ===============================
+# HTTPRoute - Backend
+# ===============================
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: backend-route
+  namespace: wms
+spec:
+  parentRefs:
+    - name: wms-gateway
+  hostnames:
+    - api.datanetwork.online
+  rules:
+    - backendRefs:
+        - name: backend-service
+          port: 5000
+
