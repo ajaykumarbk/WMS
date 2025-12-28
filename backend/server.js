@@ -1,5 +1,11 @@
 
 
+// Global request logger - add this right after const app = express();
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.originalUrl} | Body: ${JSON.stringify(req.body)} | IP: ${req.ip}`);
+  next();
+});
+
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
