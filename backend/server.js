@@ -5,15 +5,44 @@ const { Server } = require('socket.io');
 const path = require('path');
 require('dotenv').config();
 
-// Import DB pool (with ssl: { rejectUnauthorized: false } fix)
-const pool = require('./config/db');  // Adjust path if needed
+// Import DB pool
+const pool = require('./config/db');
 
 const app = express();
 const server = http.createServer(app);
 
+/* =========================
+   ✅ CORS — MUST BE FIRST
+========================= */
+const allowedOrigins = [
+  'http://app.datanetwork.online',
+  'https://app.datanetwork.online',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 204
+}));
+
+// Handle all preflight requests
+app.options('*', cors());
+
+/* =========================
+   Middleware after CORS
+========================= */
+
+// Body parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Global request logger
 app.use((req, res, next) => {
-  console.log(`[REQUEST] ${req.method} ${req.originalUrl} | Body: ${JSON.stringify(req.body)} | IP: ${req.ip}`);
+  console.log(`[REQUEST] ${req.method} ${req.originalUrl} | IP: ${req.ip}`);
   next();
 });
 
@@ -26,41 +55,26 @@ app.get('/ready', (req, res) => {
   res.status(200).json({ status: 'ready' });
 });
 
-// Test DB connection endpoint
+// DB health check
 app.get('/health/db', async (req, res) => {
   try {
     await pool.query('SELECT 1');
     res.status(200).json({ status: 'ok', message: 'Database connection successful' });
   } catch (err) {
-    console.error('DB Health Check Failed:', err.message, err.stack);
+    console.error('DB Health Check Failed:', err.message);
     res.status(500).json({
       status: 'error',
-      message: 'Database connection failed',
-      error: err.message
+      message: 'Database connection failed'
     });
   }
 });
 
-// FIXED CORS: Explicit array + preflight handling
-const allowedOrigins = [
-  'http://app.datanetwork.online',
-  'https://app.datanetwork.online',
-  'http://localhost:5173',      // Vite dev
-  'http://localhost:3000'       // React dev
-];
+// Static uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use(cors({
-  origin: allowedOrigins,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  optionsSuccessStatus: 204      // Required for OPTIONS preflight success
-}));
-
-// Explicitly handle all OPTIONS requests (extra safety)
-app.options('*', cors());
-
-// Socket.IO with matching CORS
+/* =========================
+   Socket.IO
+========================= */
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -72,61 +86,56 @@ const io = new Server(server, {
   transports: ['websocket']
 });
 
-// Other middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Static uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Attach io to req
+// Attach io to request
 app.use((req, res, next) => {
   req.io = io;
   next();
 });
 
-// API Routes
+/* =========================
+   API Routes
+========================= */
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/complaints', require('./routes/complaintRoutes'));
 app.use('/api/tips', require('./routes/tipRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 
-// Error handling middleware (improved logging)
+/* =========================
+   Global Error Handler
+========================= */
 app.use((err, req, res, next) => {
   console.error('Global Error Handler:', {
     message: err.message,
-    stack: err.stack,
     path: req.path,
     method: req.method
   });
+
   res.status(500).json({
-    error: 'Something went wrong!',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    error: 'Something went wrong!'
   });
 });
 
-// Graceful shutdown
+/* =========================
+   Graceful Shutdown
+========================= */
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  server.close(() => {
-    console.log('HTTP server closed');
-    process.exit(0);
-  });
-  io.close(() => {
-    console.log('Socket.IO closed');
-  });
+  console.log('SIGTERM received. Shutting down...');
+  server.close(() => process.exit(0));
+  io.close();
 });
 
+/* =========================
+   Start Server
+========================= */
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
   console.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
 });
 
-// Socket.IO connection logging
+// Socket.IO logging
 io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id);
-
   socket.on('disconnect', () => {
     console.log('Socket disconnected:', socket.id);
   });
