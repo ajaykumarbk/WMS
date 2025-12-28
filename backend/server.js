@@ -8,13 +8,10 @@ require('dotenv').config();
 // Import DB pool (with ssl: { rejectUnauthorized: false } fix)
 const pool = require('./config/db');  // Adjust path if needed
 
-// 1. Create Express app FIRST
 const app = express();
-
-// 2. Create HTTP server
 const server = http.createServer(app);
 
-// 3. Global request logger (NOW safe - after app is defined)
+// Global request logger
 app.use((req, res, next) => {
   console.log(`[REQUEST] ${req.method} ${req.originalUrl} | Body: ${JSON.stringify(req.body)} | IP: ${req.ip}`);
   next();
@@ -44,28 +41,26 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
-// CORS - Allow both HTTP and HTTPS
+// UPDATED CORS - Reliable, allows both HTTP & HTTPS origins
 const allowedOrigins = [
   'http://app.datanetwork.online',
   'https://app.datanetwork.online',
-  'http://localhost:5173',
-  'http://localhost:3000'
+  'http://localhost:5173',      // Vite dev
+  'http://localhost:3000'       // React dev
 ];
 
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: allowedOrigins,       // Array is simple & reliable
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  credentials: true,
+  optionsSuccessStatus: 204     // Standard for OPTIONS preflight
 }));
 
-// Socket.IO with same CORS
+// Explicit OPTIONS handler for all routes (extra safety for preflights)
+app.options('*', cors());
+
+// Socket.IO with matching CORS
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
