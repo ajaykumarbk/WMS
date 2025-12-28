@@ -60,7 +60,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps   # --legacy-peer-deps helps with some Vite/React deps
+RUN npm install --legacy-peer-deps   # --legacy-peer-deps helps with some Vite/React deps
 
 # Copy source and build
 COPY . .

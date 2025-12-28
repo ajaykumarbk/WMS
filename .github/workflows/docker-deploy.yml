@@ -59,7 +59,7 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         timeout-minutes: 5
-        continue-on-error: true  
+        continue-on-error: true
 
       # --- END OF SONARQUBE STEPS ---
 
