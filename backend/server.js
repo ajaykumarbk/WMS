@@ -9,20 +9,33 @@ require('dotenv').config();
 const pool = require('./config/db');
 
 const app = express();
+
+/* =========================
+   ✅ TRUST PROXY (IMPORTANT)
+========================= */
+app.set('trust proxy', true);
+
 const server = http.createServer(app);
 
 /* =========================
    ✅ CORS — MUST BE FIRST
 ========================= */
 const allowedOrigins = [
-  'http://app.datanetwork.online',
   'https://app.datanetwork.online',
   'http://localhost:5173',
   'http://localhost:3000'
 ];
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: function (origin, callback) {
+    // Allow health checks, curl, internal calls
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS not allowed'), false);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -31,6 +44,20 @@ app.use(cors({
 
 // Handle all preflight requests
 app.options('*', cors());
+
+/* =========================
+   HTTPS AWARENESS (OPTIONAL)
+========================= */
+app.use((req, res, next) => {
+  if (req.secure) {
+    return next();
+  }
+  // Requests coming from Cloudflare / Traefik over HTTPS
+  if (req.headers['x-forwarded-proto'] === 'https') {
+    return next();
+  }
+  next();
+});
 
 /* =========================
    Middleware after CORS
@@ -42,11 +69,15 @@ app.use(express.urlencoded({ extended: true }));
 
 // Global request logger
 app.use((req, res, next) => {
-  console.log(`[REQUEST] ${req.method} ${req.originalUrl} | IP: ${req.ip}`);
+  console.log(
+    `[REQUEST] ${req.method} ${req.originalUrl} | Secure: ${req.secure} | IP: ${req.ip}`
+  );
   next();
 });
 
-// Health checks for Kubernetes
+/* =========================
+   Health checks
+========================= */
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
 });
@@ -55,17 +86,13 @@ app.get('/ready', (req, res) => {
   res.status(200).json({ status: 'ready' });
 });
 
-// DB health check
 app.get('/health/db', async (req, res) => {
   try {
     await pool.query('SELECT 1');
     res.status(200).json({ status: 'ok', message: 'Database connection successful' });
   } catch (err) {
     console.error('DB Health Check Failed:', err.message);
-    res.status(500).json({
-      status: 'error',
-      message: 'Database connection failed'
-    });
+    res.status(500).json({ status: 'error' });
   }
 });
 
@@ -73,7 +100,7 @@ app.get('/health/db', async (req, res) => {
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 /* =========================
-   Socket.IO
+   Socket.IO (HTTPS SAFE)
 ========================= */
 const io = new Server(server, {
   cors: {
@@ -109,10 +136,7 @@ app.use((err, req, res, next) => {
     path: req.path,
     method: req.method
   });
-
-  res.status(500).json({
-    error: 'Something went wrong!'
-  });
+  res.status(500).json({ error: 'Something went wrong!' });
 });
 
 /* =========================
@@ -130,7 +154,7 @@ process.on('SIGTERM', () => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
-  console.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
+  console.log(`HTTPS via proxy enabled`);
 });
 
 // Socket.IO logging

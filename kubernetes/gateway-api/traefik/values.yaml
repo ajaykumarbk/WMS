@@ -1,32 +1,37 @@
 deployment:
-  kind: DaemonSet
+  kind: DaemonSet  # Run on every schedulable node (worker + control if taint removed)
 
 ports:
   web:
-    port: 80                  # ← Container listen port = 80 (matches what Gateway expects)
-    hostPort: 80              # ← Host bind port = 80
+    port: 8000                # Internal container listen port
+    hostPort: 80              # Bind directly to host port 80
+    protocol: TCP
+    expose:
+      default: true           # ← Correct object format (fixes error)
+  websecure:                  # HTTPS entrypoint
+    port: 8443              # Internal container listen port
+    hostPort: 443           # Bind directly to host port 443
     protocol: TCP
     expose:
       default: true
+    tls:
+      enabled: true
 
 service:
-  enabled: false              # Still no Service needed
+  enabled: false              # No Service needed with hostPort
 
 providers:
   kubernetesGateway:
     enabled: true
   kubernetesIngress:
-    enabled: false            # Optional, but good to disable if not using legacy Ingress
-
-gateway:
-  enabled: false              # Keep disabled to avoid chart's default Gateway
+    enabled: false            # Disable legacy Ingress
 
 securityContext:
   capabilities:
     drop: ["ALL"]
-    add: ["NET_BIND_SERVICE"] # Keep this — helps with low ports (even as root sometimes)
+    add: ["NET_BIND_SERVICE"] # For binding low ports
   readOnlyRootFilesystem: true
-  runAsNonRoot: false         # We're running as root for reliability
+  runAsNonRoot: false         # Required for hostPort 80/443
   runAsUser: 0
   runAsGroup: 0
 
@@ -40,6 +45,9 @@ logs:
     enabled: true
 
 additionalArguments:
-  - "--log.level=INFO"
-  - "--accesslog=true"
-  - "--accesslog.fields.defaultmode=keep"  # Optional: more verbose access logs
+  # Redirect all HTTP → HTTPS permanently
+  - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+  - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+  - "--entrypoints.web.http.redirections.entryPoint.permanent=true"
+  # Optional: more verbose logs for debugging
+  # - "--log.level=DEBUG"

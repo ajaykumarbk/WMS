@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wms-tls
+  namespace: traefik   # MUST be in same namespace as Gateway
+spec:
+  secretName: wms-tls   # This is the name Gateway references
+  dnsNames:
+  - app.datanetwork.online
+  - api.datanetwork.online
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
