@@ -5,20 +5,18 @@ const { Server } = require('socket.io');
 const path = require('path');
 require('dotenv').config();
 
-// Import DB pool
+// DB
 const pool = require('./config/db');
 
 const app = express();
 
 /* =========================
-   ✅ TRUST PROXY (REQUIRED)
+   TRUST PROXY (REQUIRED)
 ========================= */
 app.set('trust proxy', true);
 
-const server = http.createServer(app);
-
 /* =========================
-   ✅ CORS (FIXED & SAFE)
+   CORS (SAFE – but frontend is same-origin now)
 ========================= */
 const allowedOrigins = [
   'https://app.datanetwork.online',
@@ -27,33 +25,36 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(null, false);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
-// Explicit preflight handling (VERY IMPORTANT)
 app.options('*', cors());
 
 /* =========================
-   Middleware AFTER CORS
+   BODY PARSERS
 ========================= */
-
-// Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request logger
+/* =========================
+   REQUEST LOGGER
+========================= */
 app.use((req, res, next) => {
   console.log(
-    `[REQUEST] ${req.method} ${req.originalUrl} | Secure: ${req.secure} | IP: ${req.ip}`
+    `[REQUEST] ${req.method} ${req.originalUrl} | Secure=${req.secure} | IP=${req.ip}`
   );
   next();
 });
 
 /* =========================
-   Health Checks
+   HEALTH CHECKS (K8s / Envoy)
 ========================= */
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
@@ -68,38 +69,17 @@ app.get('/health/db', async (req, res) => {
     await pool.query('SELECT 1');
     res.status(200).json({ status: 'ok' });
   } catch (err) {
-    console.error('DB Health Check Failed:', err.message);
-    res.status(500).json({ status: 'error' });
+    res.status(500).json({ status: 'db_error' });
   }
 });
 
 /* =========================
-   Static Files
+   STATIC FILES
 ========================= */
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 /* =========================
-   Socket.IO (HTTPS SAFE)
-========================= */
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST'],
-    credentials: true
-  },
-  transports: ['websocket'],
-  pingTimeout: 60000,
-  pingInterval: 25000
-});
-
-// Attach io to request
-app.use((req, res, next) => {
-  req.io = io;
-  next();
-});
-
-/* =========================
-   API Routes
+   API ROUTES (IMPORTANT)
 ========================= */
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/complaints', require('./routes/complaintRoutes'));
@@ -107,38 +87,57 @@ app.use('/api/tips', require('./routes/tipRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 
 /* =========================
-   Global Error Handler
+   ERROR HANDLER
 ========================= */
 app.use((err, req, res, next) => {
-  console.error('Global Error:', err.message);
+  console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
 /* =========================
-   Graceful Shutdown
+   HTTP SERVER + SOCKET.IO
 ========================= */
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down...');
-  server.close(() => process.exit(0));
-  io.close();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  path: '/socket.io',
+  cors: {
+    origin: allowedOrigins,
+    credentials: true
+  },
+  transports: ['websocket', 'polling'],
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
-/* =========================
-   Start Server (PORT FIXED)
-========================= */
-const PORT = process.env.PORT || 8080;
-
-server.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT}`);
-  console.log(`Behind HTTPS proxy (Cloudflare + Envoy)`);
+// attach io to requests
+app.use((req, res, next) => {
+  req.io = io;
+  next();
 });
 
-/* =========================
-   Socket Logging
-========================= */
 io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id);
   socket.on('disconnect', () => {
     console.log('Socket disconnected:', socket.id);
   });
+});
+
+/* =========================
+   START SERVER (CRITICAL FIX)
+========================= */
+const PORT = process.env.PORT || 8080;
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Backend running on port ${PORT}`);
+  console.log(`✅ Listening on 0.0.0.0 (Kubernetes compatible)`);
+});
+
+/* =========================
+   GRACEFUL SHUTDOWN
+========================= */
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down...');
+  server.close(() => process.exit(0));
+  io.close();
 });
