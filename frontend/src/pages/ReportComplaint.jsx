@@ -1,61 +1,71 @@
-import { useState, useEffect, useContext } from 'react'
-import axios from 'axios'
-import { AuthContext } from '../context/AuthContext'
-import { useNavigate } from 'react-router-dom'
-
-// 🔥 Backend API base URL from .env.production or .env
-const API = import.meta.env.VITE_API_URL
+import { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import api from '../services/api'; // ✅ shared API client
 
 export default function ReportComplaint() {
-  const { user } = useContext(AuthContext)
-  const navigate = useNavigate()
-  const [categories, setCategories] = useState([])
-  const [location, setLocation] = useState({ latitude: '', longitude: '' })
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [categories, setCategories] = useState([]);
+  const [location, setLocation] = useState({ latitude: '', longitude: '' });
   const [form, setForm] = useState({
     title: '',
     description: '',
     category_id: '',
     image: null
-  })
+  });
 
   useEffect(() => {
-    // Fetch categories from backend
-    axios.get(`${API}/api/complaints/categories`)
+    // ✅ SAME-DOMAIN API CALL
+    api.get('/complaints/categories')
       .then(res => setCategories(res.data))
-      .catch(() => alert("Failed to load categories"))
+      .catch(() => alert('Failed to load categories'));
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        pos => setLocation({
-          latitude: pos.coords.latitude.toFixed(6),
-          longitude: pos.coords.longitude.toFixed(6)
-        }),
+        pos =>
+          setLocation({
+            latitude: pos.coords.latitude.toFixed(6),
+            longitude: pos.coords.longitude.toFixed(6)
+          }),
         () => alert('Location access denied')
-      )
+      );
     }
-  }, [])
+  }, []);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    const data = new FormData()
-    data.append('title', form.title)
-    data.append('description', form.description)
-    data.append('category_id', form.category_id)
-    data.append('latitude', location.latitude)
-    data.append('longitude', location.longitude)
-    if (form.image) data.append('image', form.image)
+    const data = new FormData();
+    data.append('title', form.title);
+    data.append('description', form.description);
+    data.append('category_id', form.category_id);
+    data.append('latitude', location.latitude);
+    data.append('longitude', location.longitude);
+    if (form.image) data.append('image', form.image);
 
     try {
-      await axios.post(`${API}/api/complaints`, data)
-      alert('Complaint reported!')
-      navigate('/my-complaints')
-    } catch (err) {
-      alert(err.response?.data?.message || 'Error reporting complaint')
-    }
-  }
+      // ✅ SAME-DOMAIN API CALL (multipart safe)
+      await api.post('/complaints', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
 
-  if (!user) return <p>Please <a href="/login">login</a> to report.</p>
+      alert('Complaint reported!');
+      navigate('/my-complaints');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error reporting complaint');
+    }
+  };
+
+  if (!user) {
+    return (
+      <p>
+        Please <a href="/login">login</a> to report.
+      </p>
+    );
+  }
 
   return (
     <div className="card">
@@ -94,12 +104,12 @@ export default function ReportComplaint() {
         />
 
         <p>
-          <strong>Location:</strong>{" "}
-          {location.latitude || "Getting..."}, {location.longitude || "Getting..."}
+          <strong>Location:</strong>{' '}
+          {location.latitude || 'Getting...'}, {location.longitude || 'Getting...'}
         </p>
 
         <button type="submit">Submit Report</button>
       </form>
     </div>
-  )
+  );
 }

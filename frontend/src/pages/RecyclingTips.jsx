@@ -1,22 +1,21 @@
-import { useState, useEffect } from 'react'
-import axios from 'axios'
-import Pagination from '../components/Pagination'
-
-const API = import.meta.env.VITE_API_URL
+import { useState, useEffect } from 'react';
+import Pagination from '../components/Pagination';
+import api from '../services/api'; // ✅ shared API client
 
 export default function RecyclingTips() {
-  const [tips, setTips] = useState([])
-  const [page, setPage] = useState(1)
-  const [pages, setPages] = useState(1)
+  const [tips, setTips] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
 
   useEffect(() => {
-    axios.get(`${API}/api/tips?page=${page}`)
+    // ✅ SAME-DOMAIN API CALL
+    api.get(`/tips?page=${page}`)
       .then(res => {
-        setTips(res.data.tips)
-        setPages(res.data.pages)
+        setTips(res.data.tips);
+        setPages(res.data.pages);
       })
-      .catch(() => console.error("Failed to load tips"))
-  }, [page])
+      .catch(() => console.error('Failed to load tips'));
+  }, [page]);
 
   return (
     <div>
@@ -31,5 +30,5 @@ export default function RecyclingTips() {
 
       <Pagination page={page} pages={pages} onPageChange={setPage} />
     </div>
-  )
+  );
 }
