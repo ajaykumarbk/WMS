@@ -11,14 +11,14 @@ const pool = require('./config/db');
 const app = express();
 
 /* =========================
-   ✅ TRUST PROXY (IMPORTANT)
+   ✅ TRUST PROXY (REQUIRED)
 ========================= */
 app.set('trust proxy', true);
 
 const server = http.createServer(app);
 
 /* =========================
-   ✅ CORS — MUST BE FIRST
+   ✅ CORS (FIXED & SAFE)
 ========================= */
 const allowedOrigins = [
   'https://app.datanetwork.online',
@@ -27,47 +27,24 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow health checks, curl, internal calls
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error('CORS not allowed'), false);
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  origin: allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  optionsSuccessStatus: 204
+  credentials: true
 }));
 
-// Handle all preflight requests
+// Explicit preflight handling (VERY IMPORTANT)
 app.options('*', cors());
 
 /* =========================
-   HTTPS AWARENESS (OPTIONAL)
-========================= */
-app.use((req, res, next) => {
-  if (req.secure) {
-    return next();
-  }
-  // Requests coming from Cloudflare / Traefik over HTTPS
-  if (req.headers['x-forwarded-proto'] === 'https') {
-    return next();
-  }
-  next();
-});
-
-/* =========================
-   Middleware after CORS
+   Middleware AFTER CORS
 ========================= */
 
 // Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Global request logger
+// Request logger
 app.use((req, res, next) => {
   console.log(
     `[REQUEST] ${req.method} ${req.originalUrl} | Secure: ${req.secure} | IP: ${req.ip}`
@@ -76,7 +53,7 @@ app.use((req, res, next) => {
 });
 
 /* =========================
-   Health checks
+   Health Checks
 ========================= */
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
@@ -89,14 +66,16 @@ app.get('/ready', (req, res) => {
 app.get('/health/db', async (req, res) => {
   try {
     await pool.query('SELECT 1');
-    res.status(200).json({ status: 'ok', message: 'Database connection successful' });
+    res.status(200).json({ status: 'ok' });
   } catch (err) {
     console.error('DB Health Check Failed:', err.message);
     res.status(500).json({ status: 'error' });
   }
 });
 
-// Static uploads
+/* =========================
+   Static Files
+========================= */
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 /* =========================
@@ -108,9 +87,9 @@ const io = new Server(server, {
     methods: ['GET', 'POST'],
     credentials: true
   },
+  transports: ['websocket'],
   pingTimeout: 60000,
-  pingInterval: 25000,
-  transports: ['websocket']
+  pingInterval: 25000
 });
 
 // Attach io to request
@@ -131,12 +110,8 @@ app.use('/api/analytics', require('./routes/analyticsRoutes'));
    Global Error Handler
 ========================= */
 app.use((err, req, res, next) => {
-  console.error('Global Error Handler:', {
-    message: err.message,
-    path: req.path,
-    method: req.method
-  });
-  res.status(500).json({ error: 'Something went wrong!' });
+  console.error('Global Error:', err.message);
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 /* =========================
@@ -149,15 +124,18 @@ process.on('SIGTERM', () => {
 });
 
 /* =========================
-   Start Server
+   Start Server (PORT FIXED)
 ========================= */
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
+
 server.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
-  console.log(`HTTPS via proxy enabled`);
+  console.log(`Behind HTTPS proxy (Cloudflare + Envoy)`);
 });
 
-// Socket.IO logging
+/* =========================
+   Socket Logging
+========================= */
 io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id);
   socket.on('disconnect', () => {
