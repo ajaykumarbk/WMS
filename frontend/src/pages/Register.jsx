@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../services/api'; // ✅ shared API client
+import api from '../services/api';
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -9,6 +9,7 @@ export default function Register() {
     password: '',
     confirm: ''
   });
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
@@ -17,27 +18,25 @@ export default function Register() {
     e.preventDefault();
 
     if (form.password !== form.confirm) {
-      return setError('Passwords do not match');
+      setError('Passwords do not match');
+      return;
     }
 
     setError('');
     setSuccess('');
 
     try {
-      // ✅ SAME-DOMAIN API CALL
       const res = await api.post('/auth/register', {
         name: form.name,
         email: form.email,
         password: form.password
       });
 
-      // Save token
       localStorage.setItem('token', res.data.token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
+      api.defaults.headers.common.Authorization = `Bearer ${res.data.token}`;
 
       setSuccess('Registered! Redirecting...');
       setTimeout(() => navigate('/'), 1500);
-
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     }
@@ -52,6 +51,52 @@ export default function Register() {
 
       <form onSubmit={handleSubmit}>
         <input
+          type="text"
           placeholder="Full Name"
           value={form.name}
-          onChange={e => setForm({ ...form, name: e.t
+          onChange={(e) =>
+            setForm({ ...form, name: e.target.value })
+          }
+          required
+        />
+
+        <input
+          type="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={(e) =>
+            setForm({ ...form, email: e.target.value })
+          }
+          required
+        />
+
+        <input
+          type="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={(e) =>
+            setForm({ ...form, password: e.target.value })
+          }
+          required
+          minLength={6}
+        />
+
+        <input
+          type="password"
+          placeholder="Confirm Password"
+          value={form.confirm}
+          onChange={(e) =>
+            setForm({ ...form, confirm: e.target.value })
+          }
+          required
+        />
+
+        <button type="submit">Register</button>
+      </form>
+
+      <p style={{ marginTop: '15px' }}>
+        Have an account? <Link to="/login">Login</Link>
+      </p>
+    </div>
+  );
+}
