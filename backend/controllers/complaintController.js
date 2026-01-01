@@ -9,9 +9,9 @@ exports.getComplaints = async (req, res) => {
 
   try {
     let query = `
-      SELECT c.*, u.name as user_name, cat.name as category_name 
-      FROM complaints c 
-      JOIN users u ON c.user_id = u.id 
+      SELECT c.*, u.name AS user_name, cat.name AS category_name
+      FROM complaints c
+      JOIN users u ON c.user_id = u.id
       JOIN categories cat ON c.category_id = cat.id
     `;
     let params = [];
@@ -25,11 +25,21 @@ exports.getComplaints = async (req, res) => {
     }
 
     const [complaints] = await db.query(query, params);
-    const [[{ total }]] = await db.query('SELECT COUNT(*) as total FROM complaints' + (userId ? ' WHERE user_id = ?' : ''), userId ? [userId] : []);
 
-    res.json({ complaints, total, page, pages: Math.ceil(total / limit) });
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) AS total FROM complaints${userId ? ' WHERE user_id = ?' : ''}`,
+      userId ? [userId] : []
+    );
+
+    res.json({
+      complaints,
+      total,
+      page,
+      pages: Math.ceil(total / limit)
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('getComplaints error:', err);
+    res.status(500).json({ message: 'Failed to fetch complaints' });
   }
 };
 
@@ -39,19 +49,43 @@ exports.createComplaint = async (req, res) => {
 
   try {
     const [result] = await db.query(
-      `INSERT INTO complaints (user_id, category_id, title, description, latitude, longitude, image_url) 
+      `INSERT INTO complaints 
+       (user_id, category_id, title, description, latitude, longitude, image_url)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [req.user.id, category_id, title, description, latitude, longitude, image_url]
     );
 
-    const [newComplaint] = await db.query('SELECT * FROM complaints WHERE id = ?', [result.insertId]);
-    req.io.emit('complaintAdded', newComplaint[0]);
+    const [rows] = await db.query(
+      'SELECT * FROM complaints WHERE id = ?',
+      [result.insertId]
+    );
 
-    sendEmail('admin@wms.com', 'New Complaint', `Title: ${title}\nLocation: ${latitude}, ${longitude}`);
+    const complaint = rows[0];
 
-    res.status(201).json(newComplaint[0]);
+    /* =========================
+       SAFE SOCKET EMIT (FIX)
+    ========================= */
+    if (req.io) {
+      req.io.emit('complaintAdded', complaint);
+    }
+
+    /* =========================
+       EMAIL (NON-BLOCKING)
+    ========================= */
+    try {
+      await sendEmail(
+        'admin@wms.com',
+        'New Complaint Submitted',
+        `Title: ${title}\nLocation: ${latitude}, ${longitude}`
+      );
+    } catch (emailErr) {
+      console.error('Email send failed:', emailErr);
+    }
+
+    res.status(201).json(complaint);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error('createComplaint error:', err);
+    res.status(400).json({ message: 'Failed to create complaint' });
   }
 };
 
@@ -60,16 +94,50 @@ exports.updateStatus = async (req, res) => {
   const { id } = req.params;
 
   try {
-    await db.query('UPDATE complaints SET status = ? WHERE id = ?', [status, id]);
-    const [updated] = await db.query('SELECT * FROM complaints WHERE id = ?', [id]);
-    const complaint = updated[0];
+    await db.query(
+      'UPDATE complaints SET status = ? WHERE id = ?',
+      [status, id]
+    );
 
-    const [user] = await db.query('SELECT email FROM users WHERE id = ?', [complaint.user_id]);
-    sendEmail(user[0].email, 'Complaint Updated', `Status: ${status}`);
+    const [rows] = await db.query(
+      'SELECT * FROM complaints WHERE id = ?',
+      [id]
+    );
 
-    req.io.emit('statusUpdated', complaint);
+    const complaint = rows[0];
+
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    const [[user]] = await db.query(
+      'SELECT email FROM users WHERE id = ?',
+      [complaint.user_id]
+    );
+
+    /* =========================
+       SAFE EMAIL
+    ========================= */
+    try {
+      await sendEmail(
+        user.email,
+        'Complaint Status Updated',
+        `Your complaint status is now: ${status}`
+      );
+    } catch (emailErr) {
+      console.error('Email send failed:', emailErr);
+    }
+
+    /* =========================
+       SAFE SOCKET EMIT (FIX)
+    ========================= */
+    if (req.io) {
+      req.io.emit('statusUpdated', complaint);
+    }
+
     res.json(complaint);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error('updateStatus error:', err);
+    res.status(400).json({ message: 'Failed to update status' });
   }
 };

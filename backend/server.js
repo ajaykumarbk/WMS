@@ -11,12 +11,12 @@ const pool = require('./config/db');
 const app = express();
 
 /* =========================
-   TRUST PROXY (REQUIRED)
+   TRUST PROXY (K8s / Nginx)
 ========================= */
 app.set('trust proxy', true);
 
 /* =========================
-   CORS (SAFE – but frontend is same-origin now)
+   CORS
 ========================= */
 const allowedOrigins = [
   'https://app.datanetwork.online',
@@ -28,7 +28,7 @@ app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);
     if (allowedOrigins.includes(origin)) return cb(null, true);
-    return cb(null, false);
+    return cb(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -47,14 +47,12 @@ app.use(express.urlencoded({ extended: true }));
    REQUEST LOGGER
 ========================= */
 app.use((req, res, next) => {
-  console.log(
-    `[REQUEST] ${req.method} ${req.originalUrl} | Secure=${req.secure} | IP=${req.ip}`
-  );
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   next();
 });
 
 /* =========================
-   HEALTH CHECKS (K8s / Envoy)
+   HEALTH CHECKS
 ========================= */
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
@@ -67,8 +65,9 @@ app.get('/ready', (req, res) => {
 app.get('/health/db', async (req, res) => {
   try {
     await pool.query('SELECT 1');
-    res.status(200).json({ status: 'ok' });
+    res.status(200).json({ status: 'db_ok' });
   } catch (err) {
+    console.error('DB health failed:', err);
     res.status(500).json({ status: 'db_error' });
   }
 });
@@ -77,22 +76,6 @@ app.get('/health/db', async (req, res) => {
    STATIC FILES
 ========================= */
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-/* =========================
-   API ROUTES (IMPORTANT)
-========================= */
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/complaints', require('./routes/complaintRoutes'));
-app.use('/api/tips', require('./routes/tipRoutes'));
-app.use('/api/analytics', require('./routes/analyticsRoutes'));
-
-/* =========================
-   ERROR HANDLER
-========================= */
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal Server Error' });
-});
 
 /* =========================
    HTTP SERVER + SOCKET.IO
@@ -110,27 +93,50 @@ const io = new Server(server, {
   pingInterval: 25000
 });
 
-// attach io to requests
+/* =========================
+   🔑 ATTACH IO TO REQUEST
+   (CRITICAL FIX)
+========================= */
 app.use((req, res, next) => {
   req.io = io;
   next();
 });
 
+/* =========================
+   SOCKET CONNECTIONS
+========================= */
 io.on('connection', (socket) => {
-  console.log('Socket connected:', socket.id);
+  console.log('🔌 Socket connected:', socket.id);
+
   socket.on('disconnect', () => {
-    console.log('Socket disconnected:', socket.id);
+    console.log('❌ Socket disconnected:', socket.id);
   });
 });
 
 /* =========================
-   START SERVER (CRITICAL FIX)
+   API ROUTES
+========================= */
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/complaints', require('./routes/complaintRoutes'));
+app.use('/api/tips', require('./routes/tipRoutes'));
+app.use('/api/analytics', require('./routes/analyticsRoutes'));
+
+/* =========================
+   ERROR HANDLER
+========================= */
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
+});
+
+/* =========================
+   START SERVER
 ========================= */
 const PORT = process.env.PORT || 8080;
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Backend running on port ${PORT}`);
-  console.log(`✅ Listening on 0.0.0.0 (Kubernetes compatible)`);
+  console.log(`✅ Socket.IO enabled`);
 });
 
 /* =========================
