@@ -45,14 +45,31 @@ exports.getComplaints = async (req, res) => {
 
 exports.createComplaint = async (req, res) => {
   const { title, description, category_id, latitude, longitude } = req.body;
-  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+
+  let image_url = null;
+
+  if (req.file) {
+    const publicBaseUrl =
+      process.env.PUBLIC_API_URL ||
+      `${req.protocol}://${req.get('host')}`;
+
+    image_url = `${publicBaseUrl}/uploads/${req.file.filename}`;
+  }
 
   try {
     const [result] = await db.query(
       `INSERT INTO complaints 
        (user_id, category_id, title, description, latitude, longitude, image_url)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [req.user.id, category_id, title, description, latitude, longitude, image_url]
+      [
+        req.user.id,
+        category_id,
+        title,
+        description,
+        latitude,
+        longitude,
+        image_url
+      ]
     );
 
     const [rows] = await db.query(
@@ -62,16 +79,10 @@ exports.createComplaint = async (req, res) => {
 
     const complaint = rows[0];
 
-    /* =========================
-       SAFE SOCKET EMIT (FIX)
-    ========================= */
     if (req.io) {
       req.io.emit('complaintAdded', complaint);
     }
 
-    /* =========================
-       EMAIL (NON-BLOCKING)
-    ========================= */
     try {
       await sendEmail(
         'admin@wms.com',
@@ -115,9 +126,6 @@ exports.updateStatus = async (req, res) => {
       [complaint.user_id]
     );
 
-    /* =========================
-       SAFE EMAIL
-    ========================= */
     try {
       await sendEmail(
         user.email,
@@ -128,9 +136,6 @@ exports.updateStatus = async (req, res) => {
       console.error('Email send failed:', emailErr);
     }
 
-    /* =========================
-       SAFE SOCKET EMIT (FIX)
-    ========================= */
     if (req.io) {
       req.io.emit('statusUpdated', complaint);
     }
