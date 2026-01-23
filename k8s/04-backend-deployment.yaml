@@ -26,7 +26,7 @@ spec:
 
           env:
             - name: PUBLIC_API_URL
-              value: https://api.servernet.solutions
+              value: https://app.datanetwork.online
 
           volumeMounts:
             - name: uploads

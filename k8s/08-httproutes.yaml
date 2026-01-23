@@ -18,6 +18,15 @@ spec:
         - name: backend
           port: 80
 
+    # 🔹 Uploaded images → Backend
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /uploads
+      backendRefs:
+        - name: backend
+          port: 80
+
     # 🔹 Everything else → Frontend
     - matches:
         - path:
