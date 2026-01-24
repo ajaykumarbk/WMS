@@ -37,13 +37,13 @@ gcloud run deploy backend-app \
   --set-env-vars DB_NAME=db \
   --set-env-vars JWT_SECRET=supersecret_jwt_key_2025_wms
 
-#Waste Management System (WMS)
+# Waste Management System (WMS)
 
 A production-grade, cloud-native Waste Management System built with a modern full-stack architecture and deployed on a self-managed Kubernetes cluster, exposed securely using Envoy Gateway + Cloudflare Tunnel.
 
 This project demonstrates real-world DevOps practices, including containerization, CI/CD, Kubernetes networking, persistent storage, secure ingress, and live troubleshooting.
 
-#Application
+# Application
 
 User authentication (JWT based)
 
@@ -77,25 +77,9 @@ SonarQube integration for code quality
 
 Health checks, readiness & liveness probes
 
-# Architecture Overview
-User Browser
-   ↓ HTTPS
-Cloudflare Tunnel
-   ↓
-Envoy Gateway (Gateway API)
-   ↓
---------------------------------
-|            Kubernetes        |
-|                              |
-|  Frontend Service (React)    |
-|  Backend Service (Node.js)   |
-|        |                     |
-|        └── PVC (/uploads)    |
---------------------------------
-   ↓
-MySQL Database
 
 # Tech Stack
+
 Frontend
 
 React (Vite)
@@ -133,6 +117,7 @@ Persistent Volumes & Claims
 
 
 # Networking & Routing
+
 Envoy Gateway (Gateway API)
 
 Handles HTTP routing inside the cluster
