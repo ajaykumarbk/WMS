@@ -1,42 +1,3 @@
-# WMS
-Waste Management System - A portal for municipality and civilians to report the waste with location, image, type of waste and description.
-
-
-Commands to deploy this application to google cloud run
-
-# frontend deployment
-
-docker build -t frontend . 
-
-docker tag frontend gcr.io/qwiklabs-gcp-04-8110705f4325/frontend-app
-
-docker push gcr.io/qwiklabs-gcp-04-8110705f4325/frontend-app
-
-gcloud run deploy frontend-app \
-  --image gcr.io/qwiklabs-gcp-04-8110705f4325/frontend-app \
-  --platform managed \
-  --allow-unauthenticated \
-  --region us-east1
-
-# backend deployment
-
-docker build -t backend .
-
-docker tag backend gcr.io/qwiklabs-gcp-04-8110705f4325/backend-app
-
-docker push gcr.io/qwiklabs-gcp-04-8110705f4325/backend-app
-
-gcloud run deploy backend-app \
-  --image gcr.io/qwiklabs-gcp-04-8110705f4325/backend-app \
-  --region us-east1 \
-  --platform managed \
-  --allow-unauthenticated \
-  --set-env-vars DB_HOST=Host \
-  --set-env-vars DB_USER=user \
-  --set-env-vars DB_PASS=user \
-  --set-env-vars DB_NAME=db \
-  --set-env-vars JWT_SECRET=supersecret_jwt_key_2025_wms
-
 # Waste Management System (WMS)
 
 A production-grade, cloud-native Waste Management System built with a modern full-stack architecture and deployed on a self-managed Kubernetes cluster, exposed securely using Envoy Gateway + Cloudflare Tunnel.
@@ -59,7 +20,7 @@ Analytics dashboard
 
 Pagination and role-based access control
 
-Platform & DevOps
+# Platform & DevOps
 
 Dockerized frontend and backend
 
@@ -80,7 +41,7 @@ Health checks, readiness & liveness probes
 
 # Tech Stack
 
-Frontend
+# Frontend
 
 React (Vite)
 
@@ -88,7 +49,7 @@ Axios
 
 Socket.IO Client
 
-Backend
+# Backend
 
 Node.js + Express
 
@@ -98,7 +59,7 @@ Socket.IO
 
 MySQL
 
-DevOps / Platform
+# DevOps / Platform
 
 Docker
 
@@ -113,8 +74,6 @@ GitHub Actions (CI/CD)
 SonarQube
 
 Persistent Volumes & Claims
-
-
 
 # Networking & Routing
 
@@ -162,4 +121,3 @@ Socket.IO resilience
 Persistent storage for uploads
 
 Graceful shutdown handling
-
