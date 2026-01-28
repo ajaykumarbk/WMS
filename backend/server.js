@@ -11,31 +11,55 @@ const pool = require('./config/db');
 const app = express();
 
 /* =========================
-   TRUST PROXY (K8s / Nginx)
+   TRUST PROXY (K8s / NGINX)
 ========================= */
 app.set('trust proxy', true);
 
+
 /* =========================
-   CORS
+   CORS CONFIG (FINAL FIX)
 ========================= */
-const allowedOrigins = [
-  'https://app.datanetwork.online',
-  'http://localhost:5173',
-  'http://localhost:3000'
-];
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : [];
 
 app.use(cors({
   origin: (origin, cb) => {
+    // Allow non-browser requests (curl, health checks)
     if (!origin) return cb(null, true);
-    if (allowedOrigins.includes(origin)) return cb(null, true);
-    return cb(new Error('Not allowed by CORS'));
+
+    // Allow everything outside prod
+    if (process.env.NODE_ENV !== 'production') {
+      return cb(null, true);
+    }
+
+    // Normalize origin (remove trailing slash)
+    const normalizedOrigin = origin.replace(/\/$/, '');
+
+    const isAllowed = allowedOrigins.some(o =>
+      normalizedOrigin === o.replace(/\/$/, '')
+    );
+
+    if (isAllowed) {
+      return cb(null, true);
+    }
+
+    console.warn('❌ CORS blocked:', origin);
+
+    // ✅ IMPORTANT: deny WITHOUT throwing
+    return cb(null, false);
   },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.options('*', cors());
+// Explicit OPTIONS handling (no errors)
+app.options('*', (req, res) => {
+  res.sendStatus(204);
+});
+
 
 /* =========================
    BODY PARSERS
@@ -85,7 +109,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   path: '/socket.io',
   cors: {
-    origin: allowedOrigins,
+    origin: (origin, cb) => cb(null, true),
     credentials: true
   },
   transports: ['websocket', 'polling'],
@@ -94,8 +118,7 @@ const io = new Server(server, {
 });
 
 /* =========================
-   🔑 ATTACH IO TO REQUEST
-   (CRITICAL FIX)
+   ATTACH IO TO REQUEST
 ========================= */
 app.use((req, res, next) => {
   req.io = io;
@@ -122,17 +145,29 @@ app.use('/api/tips', require('./routes/tipRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 
 /* =========================
-   ERROR HANDLER
+   404 HANDLER (API ONLY)
+========================= */
+app.use('/api', (req, res) => {
+  res.status(404).json({ message: 'API route not found' });
+});
+
+/* =========================
+   ERROR HANDLER (NO 500 FOR CORS)
 ========================= */
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
+
+  if (err.message?.includes('CORS')) {
+    return res.status(403).json({ message: 'CORS forbidden' });
+  }
+
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
 /* =========================
    START SERVER
 ========================= */
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Backend running on port ${PORT}`);
