@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: ajaykumara/backend-app:latest
+          image: ajaykumara/backend-app:73
           imagePullPolicy: Always
           ports:
             - containerPort:  5000
