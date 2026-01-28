@@ -3,11 +3,11 @@ kind: Gateway
 metadata:
   name: wms-gateway
   namespace: wms
+  annotations:
+    networking.gke.io/load-balancer-type: "External"
 spec:
-  gatewayClassName: envoy
+  gatewayClassName: nginx
   listeners:
     - name: http
       protocol: HTTP
       port: 80
-
-

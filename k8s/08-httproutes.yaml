@@ -6,9 +6,17 @@ metadata:
 spec:
   parentRefs:
     - name: wms-gateway
-  hostnames:
-    - app.datanetwork.online
+      namespace: wms
   rules:
+    # 🔹 Health check → Backend
+    - matches:
+        - path:
+            type: Exact
+            value: /health
+      backendRefs:
+        - name: backend
+          port: 80
+
     # 🔹 API traffic → Backend
     - matches:
         - path:
@@ -18,7 +26,7 @@ spec:
         - name: backend
           port: 80
 
-    # 🔹 Uploaded images → Backend
+    # 🔹 Uploads → Backend
     - matches:
         - path:
             type: PathPrefix
