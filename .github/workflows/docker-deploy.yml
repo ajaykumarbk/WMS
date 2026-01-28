@@ -2,7 +2,7 @@ name: Build & Push Docker Images
 
 on:
   push:
-    branches: [ develop, test, https-implement ]        # Triggers on push to develop
+    branches: [ develop, test, https-implement, main ]        # Triggers on push to develop
   workflow_dispatch:             # Manual trigger
 
 jobs:
@@ -82,7 +82,7 @@ jobs:
           push: true
           tags: |
             ajaykumara/frontend-app:${{ github.run_number }}
-            ajaykumara/frontend-app:latest
+            ajaykumara/frontend-app:GKE-v.001
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -94,7 +94,7 @@ jobs:
           push: true
           tags: |
             ajaykumara/backend-app:${{ github.run_number }}
-            ajaykumara/backend-app:latest
+            ajaykumara/backend-app:GKE-v.001
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
